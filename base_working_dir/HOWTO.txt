@@ -1,0 +1,36 @@
+
+
+
+   --- SETTING UP A NEW COMPILATION CONTAINER ---
+   (Assuming that we are talking about armv7_glibc_2_28)
+   
+1.)  cd ~/git/dockcross/custom_imgs
+2.)  mkdir armv7_glibc_2_28 && cd armv7_glibc_2_28
+3.)  cp ./../../<some_other_arch>/crosstool-ng.config .    [WORKAROUND]
+4.)  Make adjustments in crosstool-ng.config file according to your desired cross-compilation toolchain    [WORKAROUND]
+5.)  cp ./../../common/common.crosstool .
+6.)  Edit copied common.crosstool file and append at the beginning "FROM dockcross/base"
+7.)  Edit copied common.crosstool file and in COPY section change "crosstool-ng.config" to the path to the crosstool-ng.config file, e.g. "custom_imgs/armv7-glibc_2_28/crosstool-ng.config"
+8.)  Edit copied common.crosstool file and in RUN section change line "-v "${CT_VERSION}"" to "-v "crosstool-ng-1.25.0""    [WORKAROUND]
+9.)  mv common.crosstool Dockerfile    (Rename this to "Dockerfile" WITHOUT any file type ending)
+10.) cd ../../    (You should now be in the dockercross directory)
+11.) docker build -t armv7_glibc_2_28 -f custom_imgs/armv7_glibc_2_28/Dockerfile --build-arg CT_CONF_FILE=custom_imgs/armv7_glibc_2_28/crosstool-ng.config .
+
+
+NOTE: Step 3+4: Adjusting this file is a workaround.  Best practice is to generate this crosstool-ng.config file using the program crosstool-NG.
+
+___________________________________________________________________________________________________________________________
+
+   --- COMPILATION WITH EXISTING CONTAINER FILE ---
+   
+1.) cd ~/git/dockcross
+2.) docker run --rm dockcross/linux-<TARGET ARCHITECTURE> ./dockcross-linux-<TARGET ARCHITECTURE>
+3.) chmod +x ./dockcross-linux-<TARGET ARCHITECTURE>
+4.) ./dockcross-linux-<TARGET ARCHITECTURE> bash -c './base_working_dir/entry_point.sh <TARGET ARCHITECTURE> <PROJECT NAME>'
+    e.g.: ./dockcross-linux-armv7 bash -c './base_working_dir/entry_point.sh armv7 reimagined-octo-fortnight/10_modules/30_Helpers/Core/'
+
+NOTE: Only for linux target architectures.
+NOTE: <TARGET ARCHITECTURE> must match one of the ones provieded at https://github.com/dockcross/dockcross
+NOTE: Step 2 and 3 are only required when compiling for a specific system the first time.
+NOTE: It must be insured that a project with the name <PROJECT NAME> can be found in ./base_working_dir relative to dockcross directory. 
+      This project folder also has to contain another directory "cmake_tools" that includes the files "config.sh", "build.sh" and settings.sh.
