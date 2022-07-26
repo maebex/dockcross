@@ -1,0 +1,57 @@
+FROM dockcross/base
+# crosstool.common
+#
+# Common Docker instructions to install "crosstool-ng" and build a full
+# cross-compiler suite from a crosstool-ng configuration, CROSSTOOL_CONFIG.
+#
+# This import complements the "dockcross/base" image, adding:
+# - "ct-ng", a cross-compiler building utilty.
+# - A cross-compiler suite configured in "crosstool-ng.config".
+#
+# The generated cross-compiler will have a CROSS_ROOT of:
+#   ${XCC_PREFIX}/${CROSS_TRIPLE}
+#
+# A given platform will need to supply the appropriate "crosstool-ng.config" to
+# generate its cross-compiler. This can be built using "ct-ng menuconfig" to
+# generate a configuration.
+
+# Install Debian packages required for `ct-ng`.
+RUN apt-get update --yes && apt-get install --no-install-recommends --yes \
+    gawk \
+    gperf \
+    help2man \
+    python3-dev \
+    texinfo \
+# Packages needed for crosstool-ng 1.24 or higher 
+    unzip \
+    libtool \
+    libtool-bin \
+    && apt-get clean autoclean --yes \
+    && apt-get autoremove --yes \
+    && rm -rf /var/lib/{apt,dpkg,cache,log}/
+
+ENV XCC_PREFIX=/usr/xcc
+
+# Add the crosstool-ng script and image-specific toolchain configuration into
+# /dockcross/.
+#
+# Afterwards, we will leave the "ct-ng" config in the image as a reference
+# for users.
+COPY \
+  imagefiles/install-crosstool-ng-toolchain.sh \
+  imagefiles/patch/crosstool-ng/crosstool-ng-expat.patch \
+  imagefiles/patch/crosstool-ng/Fix-error-with-bash-5-and-up.patch \
+  custom_imgs/custom_linux-armv7-glibc_2_28/crosstool-ng.config \
+  /dockcross/
+
+# Build and install the toolchain, cleaning up artifacts afterwards.
+RUN mkdir /dockcross/crosstool \
+&& cd /dockcross/crosstool \
+&& /dockcross/install-crosstool-ng-toolchain.sh \
+  -p "${XCC_PREFIX}" \
+  -c "/dockcross/crosstool-ng.config" \
+  -v "crosstool-ng-1.25.0" \
+&& rm -rf /dockcross/crosstool /dockcross/install-crosstool-ng-toolchain.sh
+
+# Restore our default workdir (from "dockcross/base").
+WORKDIR /work

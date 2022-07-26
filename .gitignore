@@ -4,7 +4,6 @@ dockcross-*
 build
 build-*
 */test/
-Dockerfile
 web-wasm/Dockerfile
 */imagefiles/*
 !imagefiles/*
